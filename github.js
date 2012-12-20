@@ -474,9 +474,21 @@
       
       this.list = function(cb) {
         _request("GET", issuePath, null, function(err, res) {
-          cb(err, res);
+          cb(err, res.map(function(issue){
+            issue._comments = new Github.IssueComments(issuePath, issue.number);
+            return issue;
+          }));
         });
       };
+    }
+    
+    Github.IssueComments = function(issuePath, issue){
+      var commentPath = issuePath + "/" + issue + "/comments"
+      return function(cb){
+        _request("GET", commentPath, options, function(err,res) {
+          cb(err,res);
+        });
+      }
     }
 
     // Top Level API
