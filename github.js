@@ -4,14 +4,16 @@
 // For all details and documentation:
 // http://substance.io/michael/github
 
-(function() {
+;(function(Base64, _) {
+  "use strict";
+  var window = this;
   var Github;
   var API_URL = 'https://api.github.com';
 
   Github = window.Github = function(options) {
 
     // HTTP Request Abstraction
-    // =======
+    // ========
     // 
     // I'm not proud of this and neither should you be if you were responsible for the XMLHttpRequest spec.
 
@@ -21,13 +23,13 @@
         return url + ((/\?/).test(url) ? "&" : "?") + (new Date()).getTime();
       }
 
-      var xhr = new XMLHttpRequest();
+      var xhr = new window.XMLHttpRequest();
       if (!raw) {xhr.dataType = "json";}
 
       xhr.open(method, getURL());
       xhr.onreadystatechange = function () {
-        if (this.readyState == 4) {
-          if (this.status >= 200 && this.status < 300 || this.status === 304) {
+        if (this.readyState === 4) {
+          if (this.status >= 200 && (this.status < 300 || this.status === 304)) {
             cb(null, raw ? this.responseText : this.responseText ? JSON.parse(this.responseText) : true);
           } else {
             cb({request: this, error: this.status});
@@ -37,19 +39,17 @@
       xhr.setRequestHeader('Accept','application/vnd.github.raw');
       xhr.setRequestHeader('Content-Type','application/json');
       if (
-         (options.auth == 'oauth' && options.token) ||
-         (options.auth == 'basic' && options.username && options.password)
+         (options.auth === 'oauth' && options.token) ||
+         (options.auth === 'basic' && options.username && options.password)
          ) {
-           xhr.setRequestHeader('Authorization',options.auth == 'oauth'
-             ? 'token '+ options.token
-             : 'Basic ' + Base64.encode(options.username + ':' + options.password)
+           xhr.setRequestHeader('Authorization',options.auth === 'oauth' ? 'token '+ options.token : 'Basic ' + Base64.encode(options.username + ':' + options.password)
            );
          }
-      data ? xhr.send(JSON.stringify(data)) : xhr.send();
+      if(data){ xhr.send(JSON.stringify(data)); }else{ xhr.send(); }
     }
 
     // User API
-    // =======
+    // ========
 
     Github.User = function() {
       this.repos = function(cb) {
@@ -135,7 +135,7 @@
 
 
     // Repository API
-    // =======
+    // ========
 
     Github.Repository = function(options) {
       var repo = options.name;
@@ -153,7 +153,7 @@
       // -------
 
       function updateTree(branch, cb) {
-        if (branch === currentTree.branch && currentTree.sha) return cb(null, currentTree.sha);
+        if (branch === currentTree.branch && currentTree.sha){ return cb(null, currentTree.sha);}
         that.getRef("heads/"+branch, function(err, sha) {
           currentTree.branch = branch;
           currentTree.sha = sha;
@@ -166,7 +166,7 @@
 
       this.getRef = function(ref, cb) {
         _request("GET", repoPath + "/git/refs/" + ref, null, function(err, res) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.object.sha);
         });
       };
@@ -198,7 +198,7 @@
 
       this.listBranches = function(cb) {
         _request("GET", repoPath + "/git/refs/heads", null, function(err, heads) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, _.map(heads, function(head) { return _.last(head.ref.split('/')); }));
         });
       };
@@ -215,7 +215,7 @@
 
       this.getSha = function(branch, path, cb) {
         // Just use head if path is empty
-        if (path === "") return that.getRef("heads/"+branch, cb);
+        if (path === "") {return that.getRef("heads/"+branch, cb);}
         that.getTree(branch+"?recursive=true", function(err, tree) {
           var file = _.select(tree, function(file) {
             return file.path === path;
@@ -229,7 +229,7 @@
 
       this.getTree = function(tree, cb) {
         _request("GET", repoPath + "/git/trees/"+tree, null, function(err, res) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.tree);
         });
       };
@@ -246,7 +246,7 @@
         }
 
         _request("POST", repoPath + "/git/blobs", content, function(err, res) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.sha);
         });
       };
@@ -267,7 +267,7 @@
           ]
         };
         _request("POST", repoPath + "/git/trees", data, function(err, res) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.sha);
         });
       };
@@ -278,7 +278,7 @@
 
       this.postTree = function(tree, cb) {
         _request("POST", repoPath + "/git/trees", { "tree": tree }, function(err, res) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.sha);
         });
       };
@@ -301,7 +301,7 @@
 
         _request("POST", repoPath + "/git/commits", data, function(err, res) {
           currentTree.sha = res.sha; // update latest commit
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           cb(null, res.sha);
         });
       };
@@ -348,7 +348,7 @@
 
       this.read = function(branch, path, cb) {
         that.getSha(branch, path, function(err, sha) {
-          if (!sha) return cb("not found", null);
+          if (!sha) {return cb("not found", null);}
           that.getBlob(sha, function(err, content) {
             cb(err, content, sha);
           });
@@ -364,7 +364,7 @@
             // Update Tree
             var newTree = _.reject(tree, function(ref) { return ref.path === path; });
             _.each(newTree, function(ref) {
-              if (ref.type === "tree") delete ref.sha;
+              if (ref.type === "tree") {delete ref.sha;}
             });
 
             that.postTree(newTree, function(err, rootTree) {
@@ -386,8 +386,8 @@
           that.getTree(latestCommit+"?recursive=true", function(err, tree) {
             // Update Tree
             _.each(tree, function(ref) {
-              if (ref.path === path) ref.path = newPath;
-              if (ref.type === "tree") delete ref.sha;
+              if (ref.path === path) {ref.path = newPath;}
+              if (ref.type === "tree") {delete ref.sha;}
             });
 
             that.postTree(tree, function(err, rootTree) {
@@ -406,13 +406,13 @@
 
       this.write = function(branch, path, content, message, cb) {
         updateTree(branch, function(err, latestCommit) {
-          if (err) return cb(err);
+          if (err) {return cb(err);}
           that.postBlob(content, function(err, blob) {
-            if (err) return cb(err);
+            if (err) {return cb(err);}
             that.updateTree(latestCommit, path, blob, function(err, tree) {
-              if (err) return cb(err);
+              if (err) {return cb(err);}
               that.commit(latestCommit, tree, message, function(err, commit) {
-                if (err) return cb(err);
+                if (err) {return cb(err);}
                 that.updateHead(branch, commit, cb);
               });
             });
@@ -422,7 +422,7 @@
     };
 
     // Gists API
-    // =======
+    // ========
 
     Github.Gist = function(options) {
       var id = options.id;
@@ -441,7 +441,7 @@
       // Delete the gist
       // --------
 
-      this.delete = function(cb) {
+      this["delete"] = function(cb) {
         _request("DELETE", gistPath, null, function(err,res) {
           cb(err,res);
         });
@@ -467,7 +467,7 @@
     };
 
     // Issues API
-    // =======
+    // ========
 
     Github.Issues = function(options) {
       var issuePath = "/repos/" + options.owner + "/" + options.repo + "/issues";
@@ -480,22 +480,22 @@
           }));
         });
       };
-    }
+    };
     
     Github.IssueComments = function(issuePath, issue){
-      var commentPath = issuePath + "/" + issue + "/comments"
+      var commentPath = issuePath + "/" + issue + "/comments";
       return function(cb){
         _request("GET", commentPath, options, function(err,res) {
           cb(err,res);
         });
-      }
-    }
+      };
+    };
 
     // Top Level API
     // -------
 
     this.getIssues = function(owner, repo) {
-      return new Github.Issues({owner: owner, repo: repo})
+      return new Github.Issues({owner: owner, repo: repo});
     };
 
     this.getRepo = function(user, repo) {
@@ -510,4 +510,4 @@
       return new Github.Gist({id: id});
     };
   };
-}).call(this);
+}).call(this, Base64, _);
