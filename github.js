@@ -419,6 +419,20 @@
           });
         });
       };
+      
+
+      // Get the collaborators for this repo
+      // -------
+        
+      this.collaborators = function(cb){
+         _request("GET", repoPath + "/collaborators", null,
+           function(err, collaborators) {
+            cb(err, collaborators);
+          }
+        );
+      };
+      
+      
     };
 
     // Gists API
