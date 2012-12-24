@@ -446,9 +446,13 @@
       // -------
         
       this.pulls = function(cb){
-         _request("GET", repoPath + "/pulls", null,
+        var pullsPath = repoPath + "/pulls";
+         _request("GET", pullsPath, null,
            function(err, pulls) {
-            cb(err, pulls);
+            cb(err, _.map(pulls, function(pull){
+              pull._comments = Github.PullComments(pullsPath, pull.number);
+              return pull;
+            }));
           }
         );
       };
@@ -519,6 +523,15 @@
     
     Github.IssueComments = function(issuePath, issue){
       var commentPath = issuePath + "/" + issue + "/comments";
+      return function(cb){
+        _request("GET", commentPath, options, function(err,res) {
+          cb(err,res);
+        });
+      };
+    };
+    
+    Github.PullComments = function(pullPath, pull){
+      var commentPath = pullPath + "/" + pull + "/comments";
       return function(cb){
         _request("GET", commentPath, options, function(err,res) {
           cb(err,res);
