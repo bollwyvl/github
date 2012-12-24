@@ -432,6 +432,27 @@
         );
       };
       
+      // Get the issues for this repo
+      // -------
+        
+      this.issues = function(cb){
+         _request("GET", repoPath + "/issues", null,
+           function(err, issues) {
+            cb(err, issues);
+          }
+        );
+      };
+      // Get the pull requests for this repo
+      // -------
+        
+      this.pulls = function(cb){
+         _request("GET", repoPath + "/pulls", null,
+           function(err, pulls) {
+            cb(err, pulls);
+          }
+        );
+      };
+      
       
     };
 
