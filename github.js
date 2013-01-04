@@ -11,7 +11,9 @@
   var API_URL = 'https://api.github.com';
 
   Github = window.Github = function(options) {
-
+    // initialize options for public API
+    if(!arguments.length){options = {};}
+    
     // HTTP Request Abstraction
     // ========
     // 
@@ -436,9 +438,13 @@
       // -------
         
       this.issues = function(cb){
-         _request("GET", repoPath + "/issues", null,
+        var issuesPath = repoPath + "/issues";
+         _request("GET", issuesPath, null,
            function(err, issues) {
-            cb(err, issues);
+             issues.map(function(issue){
+               issue._comments = Github.IssueComments(issuesPath, issue.number);
+             });
+             cb(err, issues);
           }
         );
       };
@@ -449,10 +455,10 @@
         var pullsPath = repoPath + "/pulls";
          _request("GET", pullsPath, null,
            function(err, pulls) {
-            cb(err, _.map(pulls, function(pull){
-              pull._comments = Github.PullComments(pullsPath, pull.number);
-              return pull;
-            }));
+             pulls.map(function(pull){
+               pull._comments = Github.PullComments(pullsPath, pull.number);
+             });
+             cb(err, pulls);
           }
         );
       };
@@ -476,21 +482,6 @@
         });
       };
 
-      // Create the gist
-      // --------
-      // {
-      //  "description": "the description for this gist",
-      //    "public": true,
-      //    "files": {
-      //      "file1.txt": {
-      //        "content": "String file contents"
-      //      }
-      //    }
-      // }
-      
-      this.create = function(options, cb){
-        _request("POST","/gists", options, cb);
-      };
 
       // Delete the gist
       // --------
@@ -528,16 +519,16 @@
       
       this.list = function(cb) {
         _request("GET", issuePath, null, function(err, res) {
-          cb(err, res.map(function(issue){
-            issue._comments = new Github.IssueComments(issuePath, issue.number);
-            return issue;
-          }));
+          cb(err, res);
         });
       };
     };
     
     Github.IssueComments = function(issuePath, issue){
       var commentPath = issuePath + "/" + issue + "/comments";
+      if(arguments.length === 1){
+        commentPath = issuePath + "/comments";
+      }
       return function(cb){
         _request("GET", commentPath, options, function(err,res) {
           cb(err,res);
@@ -547,6 +538,9 @@
     
     Github.PullComments = function(pullPath, pull){
       var commentPath = pullPath + "/" + pull + "/comments";
+      if(arguments.length === 1){
+        commentPath = pullPath + "/comments";
+      }
       return function(cb){
         _request("GET", commentPath, options, function(err,res) {
           cb(err,res);
