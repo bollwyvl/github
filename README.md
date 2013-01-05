@@ -23,6 +23,19 @@ var github = new Github({
 });
 ```
 
+If you are worried about your API usage, you can optionally specify a callback
+to be called every time you receive new X-RateLimit-Remaining information:
+
+```js
+var github = new Github({
+  token: "OAUTH_TOKEN"
+  auth: "oauth",
+  rateLimit: function(limit, remaining){
+    console.log(remaining / limit)
+  }
+});
+```
+
 ## Repository API
 
 

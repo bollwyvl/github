@@ -36,6 +36,11 @@
           } else {
             cb({request: this, error: this.status});
           }
+          if(!_.isUndefined(options.rateLimit)){
+            var limit = +this.getResponseHeader("X-RateLimit-Limit"),
+              remaining = +this.getResponseHeader("X-RateLimit-Remaining");
+            options.rateLimit(limit, remaining);
+          }
         }
       };
       xhr.setRequestHeader('Accept','application/vnd.github.raw');
